@@ -1,82 +1,103 @@
--- BlackScreenDebug.lua
--- Module แสดงหน้าจอดำพร้อมข้อมูล + ปุ่มเปิดปิด
+-- ModuleScript: StatusBlackScreen
+-- เก็บใน ReplicatedStorage.Modules.StatusBlackScreen
 
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local StarterGui = game:GetService("StarterGui")
+local LocalPlayer = Players.LocalPlayer
 
-local module = {}
-local ScreenGui, Frame, InfoLabel, ToggleButton
-local isVisible = false
+local Status = {}
+Status.__index = Status
 
--- ฟังก์ชันสร้าง UI
-local function createUI()
-    if ScreenGui then return end
+local ScreenGui, Frame, Label, ToggleButton
+local watchList = {}
+local visible = true
 
-    ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "BlackScreenDebug"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+-- สร้าง GUI
+local function setupGui()
+	if ScreenGui then return end
 
-    -- พื้นหลังดำ
-    Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(1, 0, 1, 0)
-    Frame.BackgroundColor3 = Color3.new(0, 0, 0)
-    Frame.Visible = false
-    Frame.Parent = ScreenGui
+	ScreenGui = Instance.new("ScreenGui")
+	ScreenGui.Name = "StatusBlackScreen"
+	ScreenGui.ResetOnSpawn = false
+	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-    -- ข้อความข้อมูล
-    InfoLabel = Instance.new("TextLabel")
-    InfoLabel.Size = UDim2.new(1, 0, 1, 0)
-    InfoLabel.BackgroundTransparency = 1
-    InfoLabel.TextColor3 = Color3.new(1, 1, 1)
-    InfoLabel.TextScaled = true
-    InfoLabel.Text = ""
-    InfoLabel.Font = Enum.Font.SourceSansBold
-    InfoLabel.Parent = Frame
+	-- Fullscreen black frame
+	Frame = Instance.new("Frame")
+	Frame.Size = UDim2.new(1, 0, 1, 0)
+	Frame.Position = UDim2.new(0, 0, 0, 0)
+	Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	Frame.BackgroundTransparency = 0
+	Frame.Parent = ScreenGui
 
-    -- ปุ่ม toggle
-    ToggleButton = Instance.new("TextButton")
-    ToggleButton.Size = UDim2.new(0, 120, 0, 40)
-    ToggleButton.Position = UDim2.new(0, 10, 0, 10)
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    ToggleButton.TextColor3 = Color3.new(1, 1, 1)
-    ToggleButton.Text = "Toggle Debug"
-    ToggleButton.Parent = ScreenGui
+	-- Label แสดงข้อมูล
+	Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1, -20, 1, -50)
+	Label.Position = UDim2.new(0, 10, 0, 10)
+	Label.BackgroundTransparency = 1
+	Label.TextColor3 = Color3.fromRGB(0, 255, 0)
+	Label.Font = Enum.Font.Code
+	Label.TextSize = 16
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextYAlignment = Enum.TextYAlignment.Top
+	Label.Text = ""
+	Label.Parent = Frame
 
-    ToggleButton.MouseButton1Click:Connect(function()
-        module.Toggle()
-    end)
+	-- ปุ่มเปิด/ปิด
+	ToggleButton = Instance.new("TextButton")
+	ToggleButton.Size = UDim2.new(0, 120, 0, 30)
+	ToggleButton.Position = UDim2.new(1, -130, 0, 10)
+	ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	ToggleButton.TextColor3 = Color3.fromRGB(0, 255, 0)
+	ToggleButton.Font = Enum.Font.Code
+	ToggleButton.TextSize = 14
+	ToggleButton.Text = "Toggle Status"
+	ToggleButton.Parent = Frame
+
+	ToggleButton.MouseButton1Click:Connect(function()
+		visible = not visible
+		Frame.Visible = visible
+	end)
 end
 
--- API: อัพเดทข้อมูลที่โชว์
-function module.Update(infoTable)
-    createUI()
-    local text = ""
-    for k, v in pairs(infoTable) do
-        text = text .. tostring(k) .. ": " .. tostring(v) .. "\n"
-    end
-    InfoLabel.Text = text
+-- อัพเดท GUI
+local function updateGui()
+	if not Label then return end
+
+	local textLines = {}
+	for name, func in pairs(watchList) do
+		local success, value = pcall(func)
+		if success then
+			table.insert(textLines, name .. ": " .. tostring(value))
+		else
+			table.insert(textLines, name .. ": [Error]")
+		end
+	end
+
+	Label.Text = table.concat(textLines, "\n")
 end
 
--- API: เปิด/ปิด
-function module.Toggle()
-    createUI()
-    isVisible = not isVisible
-    Frame.Visible = isVisible
+-- Loop อัพเดท
+RunService.RenderStepped:Connect(updateGui)
+
+-- API
+function Status.Watch(name, callback)
+	setupGui()
+	watchList[name] = callback
 end
 
--- API: เปิด
-function module.Show()
-    createUI()
-    isVisible = true
-    Frame.Visible = true
+function Status.Unwatch(name)
+	watchList[name] = nil
 end
 
--- API: ปิด
-function module.Hide()
-    createUI()
-    isVisible = false
-    Frame.Visible = false
+function Status.Clear()
+	table.clear(watchList)
 end
 
-return module
+function Status.Toggle(state)
+	if Frame then
+		Frame.Visible = state
+		visible = state
+	end
+end
+
+return Status
