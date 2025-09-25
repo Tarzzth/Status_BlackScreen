@@ -1,8 +1,8 @@
 -- ModuleScript: StatusBlackScreen
 -- เก็บใน ReplicatedStorage.Modules.StatusBlackScreen
 
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 local Status = {}
@@ -29,39 +29,42 @@ local function setupGui()
 	Frame.BackgroundTransparency = 0
 	Frame.Parent = ScreenGui
 
-	-- Label แสดงข้อมูล
+	-- Label กลางจอ ตัวใหญ่ สีขาว
 	Label = Instance.new("TextLabel")
-	Label.Size = UDim2.new(1, -20, 1, -50)
-	Label.Position = UDim2.new(0, 10, 0, 10)
+	Label.Size = UDim2.new(1, 0, 1, 0)
+	Label.Position = UDim2.new(0, 0, 0, 0)
 	Label.BackgroundTransparency = 1
-	Label.TextColor3 = Color3.fromRGB(0, 255, 0)
+	Label.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Label.Font = Enum.Font.Code
-	Label.TextSize = 16
-	Label.TextXAlignment = Enum.TextXAlignment.Left
-	Label.TextYAlignment = Enum.TextYAlignment.Top
+	Label.TextSize = 40
+	Label.TextScaled = true
+	Label.TextXAlignment = Enum.TextXAlignment.Center
+	Label.TextYAlignment = Enum.TextYAlignment.Center
 	Label.Text = ""
 	Label.Parent = Frame
 
 	-- ปุ่มเปิด/ปิด
 	ToggleButton = Instance.new("TextButton")
-	ToggleButton.Size = UDim2.new(0, 120, 0, 30)
-	ToggleButton.Position = UDim2.new(1, -130, 0, 10)
+	ToggleButton.Size = UDim2.new(0, 150, 0, 40)
+	ToggleButton.Position = UDim2.new(0.5, -75, 0, 20)
 	ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	ToggleButton.TextColor3 = Color3.fromRGB(0, 255, 0)
+	ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	ToggleButton.Font = Enum.Font.Code
-	ToggleButton.TextSize = 14
+	ToggleButton.TextSize = 20
 	ToggleButton.Text = "Toggle Status"
 	ToggleButton.Parent = Frame
 
+	-- ปุ่ม toggle GUI
 	ToggleButton.MouseButton1Click:Connect(function()
 		visible = not visible
-		Frame.Visible = visible
+		Frame.Visible = true -- ต้องให้ frame ยังอยู่
+		Label.Visible = visible
 	end)
 end
 
 -- อัพเดท GUI
 local function updateGui()
-	if not Label then return end
+	if not Label or not visible then return end
 
 	local textLines = {}
 	for name, func in pairs(watchList) do
@@ -76,7 +79,7 @@ local function updateGui()
 	Label.Text = table.concat(textLines, "\n")
 end
 
--- Loop อัพเดท
+-- Loop update
 RunService.RenderStepped:Connect(updateGui)
 
 -- API
@@ -94,10 +97,10 @@ function Status.Clear()
 end
 
 function Status.Toggle(state)
-	if Frame then
-		Frame.Visible = state
-		visible = state
-	end
+	setupGui()
+	visible = state
+	Label.Visible = state
+	Frame.Visible = true -- Frame ต้องอยู่ตลอด
 end
 
 return Status
