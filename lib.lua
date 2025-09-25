@@ -1,4 +1,6 @@
 -- ModuleScript: StatusBlackScreen
+-- เก็บใน ReplicatedStorage.Modules.StatusBlackScreen
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
@@ -6,10 +8,12 @@ local LocalPlayer = Players.LocalPlayer
 local Status = {}
 Status.__index = Status
 
+-- GUI ตัวหลัก
 local ScreenGui
 local BlackFrame, Label
 local ToggleFrame, ToggleButton
-local watchList = {}
+local watchList = {}   -- name -> callback
+local watchOrder = {}  -- ลำดับการเรียก watch
 local visible = true
 
 -- สร้าง GUI
@@ -73,12 +77,15 @@ local function updateGui()
 	if not Label or not visible then return end
 
 	local textLines = {}
-	for name, func in pairs(watchList) do
-		local success, value = pcall(func)
-		if success then
-			table.insert(textLines, name .. ": " .. tostring(value))
-		else
-			table.insert(textLines, name .. ": [Error]")
+	for _, name in ipairs(watchOrder) do
+		local func = watchList[name]
+		if func then
+			local success, value = pcall(func)
+			if success then
+				table.insert(textLines, name .. ": " .. tostring(value))
+			else
+				table.insert(textLines, name .. ": [Error]")
+			end
 		end
 	end
 
@@ -90,15 +97,25 @@ RunService.RenderStepped:Connect(updateGui)
 -- API
 function Status.Watch(name, callback)
 	setupGui()
+	if not watchList[name] then
+		table.insert(watchOrder, name)
+	end
 	watchList[name] = callback
 end
 
 function Status.Unwatch(name)
 	watchList[name] = nil
+	for i, key in ipairs(watchOrder) do
+		if key == name then
+			table.remove(watchOrder, i)
+			break
+		end
+	end
 end
 
 function Status.Clear()
 	table.clear(watchList)
+	table.clear(watchOrder)
 end
 
 function Status.Toggle(state)
