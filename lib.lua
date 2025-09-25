@@ -1,6 +1,4 @@
 -- ModuleScript: StatusBlackScreen
--- เก็บใน ReplicatedStorage.Modules.StatusBlackScreen
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
@@ -8,7 +6,9 @@ local LocalPlayer = Players.LocalPlayer
 local Status = {}
 Status.__index = Status
 
-local ScreenGui, Frame, Label, ToggleButton
+local ScreenGui
+local BlackFrame, Label
+local ToggleFrame, ToggleButton
 local watchList = {}
 local visible = true
 
@@ -22,14 +22,14 @@ local function setupGui()
 	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 	-- Fullscreen black frame
-	Frame = Instance.new("Frame")
-	Frame.Size = UDim2.new(1, 0, 1, 0)
-	Frame.Position = UDim2.new(0, 0, 0, 0)
-	Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	Frame.BackgroundTransparency = 0
-	Frame.Parent = ScreenGui
+	BlackFrame = Instance.new("Frame")
+	BlackFrame.Size = UDim2.new(1, 0, 1, 0)
+	BlackFrame.Position = UDim2.new(0, 0, 0, 0)
+	BlackFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	BlackFrame.BackgroundTransparency = 0
+	BlackFrame.Parent = ScreenGui
 
-	-- Label กลางจอ ตัวใหญ่ สีขาว
+	-- Label กลางจอ
 	Label = Instance.new("TextLabel")
 	Label.Size = UDim2.new(1, 0, 1, 0)
 	Label.Position = UDim2.new(0, 0, 0, 0)
@@ -41,24 +41,30 @@ local function setupGui()
 	Label.TextXAlignment = Enum.TextXAlignment.Center
 	Label.TextYAlignment = Enum.TextYAlignment.Center
 	Label.Text = ""
-	Label.Parent = Frame
+	Label.Parent = BlackFrame
 
-	-- ปุ่มเปิด/ปิด
+	-- Frame สำหรับปุ่ม toggle แยกออกมา
+	ToggleFrame = Instance.new("Frame")
+	ToggleFrame.Size = UDim2.new(0, 160, 0, 50)
+	ToggleFrame.Position = UDim2.new(1, -170, 0, 20)
+	ToggleFrame.BackgroundTransparency = 1
+	ToggleFrame.Parent = ScreenGui
+
+	-- ปุ่ม toggle
 	ToggleButton = Instance.new("TextButton")
-	ToggleButton.Size = UDim2.new(0, 150, 0, 40)
-	ToggleButton.Position = UDim2.new(0.5, -75, 0, 20)
+	ToggleButton.Size = UDim2.new(1, 0, 1, 0)
+	ToggleButton.Position = UDim2.new(0, 0, 0, 0)
 	ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	ToggleButton.Font = Enum.Font.Code
 	ToggleButton.TextSize = 20
 	ToggleButton.Text = "Toggle Status"
-	ToggleButton.Parent = Frame
+	ToggleButton.Parent = ToggleFrame
 
-	-- ปุ่ม toggle GUI
+	-- กดปุ่ม toggle
 	ToggleButton.MouseButton1Click:Connect(function()
 		visible = not visible
-		Frame.Visible = true -- ต้องให้ frame ยังอยู่
-		Label.Visible = visible
+		BlackFrame.Visible = visible
 	end)
 end
 
@@ -79,7 +85,6 @@ local function updateGui()
 	Label.Text = table.concat(textLines, "\n")
 end
 
--- Loop update
 RunService.RenderStepped:Connect(updateGui)
 
 -- API
@@ -99,8 +104,7 @@ end
 function Status.Toggle(state)
 	setupGui()
 	visible = state
-	Label.Visible = state
-	Frame.Visible = true -- Frame ต้องอยู่ตลอด
+	BlackFrame.Visible = state
 end
 
 return Status
